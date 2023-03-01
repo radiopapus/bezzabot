@@ -21,3 +21,4 @@ chrono = "0.4"
 # async-process = "1.6.0" run command from cli in async mode
 openssl = { version = "0.10.45", default-features = false, features = ["vendored"] }
 openssl-probe = "0.1.5"
+rand = "0.8.5"
