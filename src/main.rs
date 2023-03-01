@@ -27,7 +27,9 @@ mod command;
 
 use crate::command::datetime_from_unix::unix_timestamp_to_datetime;
 use crate::command::switch_keyboard::SwitchKeyboard;
+use crate::command::winner::winner;
 use crate::command::BotCommand;
+use log::info;
 use std::convert::Infallible;
 use std::env;
 use teloxide::prelude::{Message, ResponseResult};
@@ -43,7 +45,7 @@ async fn main() {
     pretty_env_logger::init();
     dotenv::dotenv().ok();
 
-    log::info!("Starting bezzabot...");
+    info!("Starting bezzabot...");
 
     let bot = Bot::from_env();
     let listener = setup_webhook(bot.clone()).await;
@@ -85,13 +87,16 @@ async fn answer(bot: Bot, msg: Message, me: Me) -> ResponseResult<()> {
                 from_lang,
                 to_lang,
             };
-
             let result = skb.switch_layout(text);
             bot.send_message(msg.chat.id, result).await?
         }
 
         BotCommand::Utime { timestamp } => {
             let result = unix_timestamp_to_datetime(timestamp);
+            bot.send_message(msg.chat.id, result).await?
+        }
+        BotCommand::Winner(input) => {
+            let result = winner(input);
             bot.send_message(msg.chat.id, result).await?
         }
     };

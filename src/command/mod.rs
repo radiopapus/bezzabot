@@ -23,10 +23,11 @@
 
 pub mod datetime_from_unix;
 pub mod switch_keyboard;
-
+pub mod winner;
 use crate::command::switch_keyboard::{FromLanguage, Layout, ToLanguage};
 use switch_keyboard::skb_parser;
 use teloxide::utils::command::BotCommands;
+use winner::winner_parser;
 
 #[derive(BotCommands, Debug, Clone)]
 #[command(rename_rule = "lowercase", description = "Доступные команды:")]
@@ -36,14 +37,26 @@ pub enum BotCommand {
 
     #[command(
         parse_with = skb_parser,
-        description = "Превращает йцукен -> qwerty. Пример: `/skb <text> <layout> <from_lang> <to_lang>`.")]
+        description = "Превращает йцукен -> qwerty. Пример: /skb <text>.")]
     Skb(String, Layout, FromLanguage, ToLanguage),
 
     #[command(
-        description = "Превращает unix timestamp в дату в формате %Y-%m-%d %H:%M:%S. Пример: `/utime ts` -> , где ts число секунд с 01 января 1970."
+        description = "Превращает unix timestamp в дату в формате %Y-%m-%d %H:%M:%S. Пример: /utime ts -> , где ts число секунд с 01 января 1970."
     )]
     Utime { timestamp: String },
-    // B64 { value: String },
+    #[command(
+        parse_with = winner_parser,
+        description = r#"Выбирает случайный id из списка. Пример: /winner 1 2 3 4 5"#
+    )]
+    Winner(String),
+    // Radix {
+    //     from: u8,
+    //     to: u8,
+    //     value: String
+    // },
+    // JsonPretty { ::serde_json::to_string_pretty(&obj)
+    //     value: String
+    // },
     // Jwt { value: String },
     // #[command(description = "Запрос в wikipedia. Пример: /wikit простое число.")]
     // Wikit { query: String },
