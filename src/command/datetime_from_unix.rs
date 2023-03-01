@@ -24,7 +24,7 @@
 use chrono::{DateTime, NaiveDateTime, Utc};
 
 pub fn unix_timestamp_to_datetime(timestamp: String /*, tz: TimeZone*/) -> String {
-    let timestamp_sec: i64 = timestamp.parse().unwrap();
+    let timestamp_sec: i64 = timestamp.parse().unwrap_or(Utc::now().timestamp());
     let naive = NaiveDateTime::from_timestamp_opt(timestamp_sec, 0).unwrap();
     let dt: DateTime<Utc> = DateTime::from_utc(naive, Utc);
     dt.format("%Y-%m-%d %H:%M:%S").to_string()
