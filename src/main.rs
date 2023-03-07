@@ -26,9 +26,12 @@
 mod command;
 
 use crate::command::datetime_from_unix::unix_timestamp_to_datetime;
+use crate::command::radix::radix;
 use crate::command::switch_keyboard::SwitchKeyboard;
 use crate::command::winner::winner;
 use crate::command::BotCommand;
+use base64::engine::general_purpose;
+use base64::Engine;
 use log::info;
 use std::convert::Infallible;
 use std::env;
@@ -39,6 +42,7 @@ use teloxide::update_listeners::webhooks::Options;
 use teloxide::update_listeners::{webhooks, UpdateListener};
 use teloxide::utils::command::BotCommands;
 use teloxide::Bot;
+use BotCommand::{Help, Radix, Skb, Utime, Winner, B64D, B64E};
 
 #[tokio::main]
 async fn main() {
@@ -54,6 +58,7 @@ async fn main() {
 }
 
 async fn setup_webhook(bot: Bot) -> impl UpdateListener<Err = Infallible> + Send {
+    info!("Setup webhook...");
     let port = env::var("PORT").expect("Set PORT, please.");
     let port: u16 = port
         .parse()
@@ -73,15 +78,28 @@ async fn answer(bot: Bot, msg: Message, me: Me) -> ResponseResult<()> {
     let bot_name = me.username();
     let text = msg.text().unwrap_or("help");
 
-    let cmd = BotCommand::parse(text, bot_name).unwrap_or(BotCommand::Help);
+    let cmd = BotCommand::parse(text, bot_name).unwrap_or(Help);
 
     match cmd {
-        BotCommand::Help => {
+        B64E(input) => {
+            let result = general_purpose::URL_SAFE_NO_PAD.encode(input);
+            bot.send_message(msg.chat.id, result).await?
+        }
+        B64D(input) => {
+            let result = general_purpose::URL_SAFE_NO_PAD
+                .decode(input)
+                .unwrap_or_default();
+
+            bot.send_message(msg.chat.id, String::from_utf8_lossy(&result))
+                .await?
+        }
+
+        Help => {
             bot.send_message(msg.chat.id, BotCommand::descriptions().to_string())
                 .await?
         }
 
-        BotCommand::Skb(text, layout, from_lang, to_lang) => {
+        Skb(text, layout, from_lang, to_lang) => {
             let skb = SwitchKeyboard {
                 layout,
                 from_lang,
@@ -91,11 +109,16 @@ async fn answer(bot: Bot, msg: Message, me: Me) -> ResponseResult<()> {
             bot.send_message(msg.chat.id, result).await?
         }
 
-        BotCommand::Utime { timestamp } => {
+        Radix(from, to, value) => {
+            let result = radix(from, to, value.as_str());
+            bot.send_message(msg.chat.id, result).await?
+        }
+
+        Utime { timestamp } => {
             let result = unix_timestamp_to_datetime(timestamp);
             bot.send_message(msg.chat.id, result).await?
         }
-        BotCommand::Winner(input) => {
+        Winner(input) => {
             let result = winner(input);
             bot.send_message(msg.chat.id, result).await?
         }

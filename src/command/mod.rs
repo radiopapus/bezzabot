@@ -22,9 +22,13 @@
  */
 
 pub mod datetime_from_unix;
+pub mod radix;
 pub mod switch_keyboard;
 pub mod winner;
+
+use crate::command::radix::{FromRadix, ToRadix};
 use crate::command::switch_keyboard::{FromLanguage, Layout, ToLanguage};
+use radix::radix_parser;
 use switch_keyboard::skb_parser;
 use teloxide::utils::command::BotCommands;
 use winner::winner_parser;
@@ -37,23 +41,32 @@ pub enum BotCommand {
 
     #[command(
         parse_with = skb_parser,
-        description = "Превращает йцукен -> qwerty. Пример: /skb <text>.")]
+        description = "Превращает йцукен -> qwerty. Пример: /skb <text>."
+    )]
     Skb(String, Layout, FromLanguage, ToLanguage),
 
     #[command(
         description = "Превращает unix timestamp в дату в формате %Y-%m-%d %H:%M:%S. Пример: /utime ts -> , где ts число секунд с 01 января 1970."
     )]
     Utime { timestamp: String },
+
     #[command(
         parse_with = winner_parser,
         description = r#"Выбирает случайный id из списка. Пример: /winner 1 2 3 4 5"#
     )]
     Winner(String),
-    // Radix {
-    //     from: u8,
-    //     to: u8,
-    //     value: String
-    // },
+
+    #[command(description = "URL safe base64 encoder. /b64e string")]
+    B64E(String),
+
+    #[command(description = "URL safe base64 decoder. /b64d string")]
+    B64D(String),
+
+    #[command(
+        parse_with = radix_parser,
+        description = "Radix converter. /radix 2 16 1111"
+    )]
+    Radix(FromRadix, ToRadix, String),
     // JsonPretty { ::serde_json::to_string_pretty(&obj)
     //     value: String
     // },
