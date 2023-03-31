@@ -29,10 +29,11 @@ use crate::command::datetime_from_unix::unix_timestamp_to_datetime;
 use crate::command::radix::radix;
 use crate::command::switch_keyboard::SwitchKeyboard;
 use crate::command::winner::winner;
-use crate::command::BotCommand;
+use crate::command::{BotCommand, BotError};
 use base64::engine::general_purpose;
 use base64::Engine;
 use log::info;
+use serde_json::Value;
 use std::convert::Infallible;
 use std::env;
 use teloxide::prelude::{Message, ResponseResult};
@@ -42,7 +43,7 @@ use teloxide::update_listeners::webhooks::Options;
 use teloxide::update_listeners::{webhooks, UpdateListener};
 use teloxide::utils::command::BotCommands;
 use teloxide::Bot;
-use BotCommand::{Help, Radix, Skb, Utime, Winner, B64D, B64E};
+use BotCommand::{Help, Jp, Radix, Skb, Utime, Winner, B64D, B64E};
 
 #[tokio::main]
 async fn main() {
@@ -52,12 +53,12 @@ async fn main() {
     info!("Starting bezzabot...");
 
     let bot = Bot::from_env();
-    let listener = setup_webhook(bot.clone()).await;
+    let listener = setup_listener(bot.clone()).await;
 
-    teloxide::repl_with_listener(bot, answer, listener).await;
+    teloxide::repl_with_listener(bot.clone(), answer, listener).await;
 }
 
-async fn setup_webhook(bot: Bot) -> impl UpdateListener<Err = Infallible> + Send {
+async fn setup_listener(bot: Bot) -> impl UpdateListener<Err = Infallible> + Send {
     info!("Setup webhook...");
     let port = env::var("PORT").expect("Set PORT, please.");
     let port: u16 = port
@@ -69,7 +70,7 @@ async fn setup_webhook(bot: Bot) -> impl UpdateListener<Err = Infallible> + Send
     let host = env::var("HOST_URL").expect("Set HOST_URL, please.");
     let host = host.parse().expect("Incorrect Url format");
 
-    webhooks::axum(bot.clone(), Options::new(addr, host))
+    webhooks::axum(bot, Options::new(addr, host))
         .await
         .expect("Could not setup webhook")
 }
@@ -92,6 +93,17 @@ async fn answer(bot: Bot, msg: Message, me: Me) -> ResponseResult<()> {
 
             bot.send_message(msg.chat.id, String::from_utf8_lossy(&result))
                 .await?
+        }
+
+        Jp(json_string) => {
+            // let example_json = r#"{"a": "b", "c" : [1,2,3,4], "d": {"d1": 123, "d2": 3}}"#;
+            let value: Value = serde_json::from_str(&json_string)
+                .map_err(|source| BotError::invalid_json(source, &json_string))?;
+
+            let prettified = serde_json::to_string_pretty(&value)
+                .map_err(|source| BotError::invalid_json(source, &json_string))?;
+
+            bot.send_message(msg.chat.id, prettified).await?
         }
 
         Help => {
