@@ -33,17 +33,18 @@ use crate::command::{BotCommand, BotError};
 use base64::engine::general_purpose;
 use base64::Engine;
 use log::info;
+use qrcode_generator::QrCodeEcc;
 use serde_json::Value;
 use std::convert::Infallible;
 use std::env;
 use teloxide::prelude::{Message, ResponseResult};
 use teloxide::requests::Requester;
-use teloxide::types::Me;
+use teloxide::types::{InputFile, Me};
 use teloxide::update_listeners::webhooks::Options;
 use teloxide::update_listeners::{webhooks, UpdateListener};
 use teloxide::utils::command::BotCommands;
 use teloxide::Bot;
-use BotCommand::{Help, Jp, Radix, Skb, Utime, Winner, B64D, B64E};
+use BotCommand::{Help, Jp, Qr, Radix, Skb, Utime, Winner, B64D, B64E};
 
 #[tokio::main]
 async fn main() {
@@ -130,6 +131,16 @@ async fn answer(bot: Bot, msg: Message, me: Me) -> ResponseResult<()> {
             let result = unix_timestamp_to_datetime(timestamp);
             bot.send_message(msg.chat.id, result).await?
         }
+
+        Qr { text } => {
+            let result: Vec<u8> =
+                qrcode_generator::to_png_to_vec(text, QrCodeEcc::Low, 256).unwrap();
+
+            let inner = InputFile::memory(result);
+
+            bot.send_photo(msg.chat.id, inner).await?
+        }
+
         Winner(input) => {
             let result = winner(input);
             bot.send_message(msg.chat.id, result).await?

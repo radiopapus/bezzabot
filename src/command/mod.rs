@@ -60,6 +60,9 @@ pub enum BotCommand {
     )]
     Utime { timestamp: String },
 
+    #[command(description = "Генерирует qr code по тексту. Пример: /qr text")]
+    Qr { text: String },
+
     #[command(
         parse_with = winner_parser,
         description = r#"Выбирает случайный id из списка. Пример: /winner 1 2 3 4 5"#
