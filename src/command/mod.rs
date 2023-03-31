@@ -31,7 +31,17 @@ use crate::command::switch_keyboard::{FromLanguage, Layout, ToLanguage};
 use radix::radix_parser;
 use switch_keyboard::skb_parser;
 use teloxide::utils::command::BotCommands;
+use teloxide::RequestError;
 use winner::winner_parser;
+
+pub struct BotError;
+
+impl BotError {
+    pub fn invalid_json(source: serde_json::Error, raw_json: &str) -> RequestError {
+        let raw = Box::from(raw_json);
+        RequestError::InvalidJson { source, raw }
+    }
+}
 
 #[derive(BotCommands, Debug, Clone)]
 #[command(rename_rule = "lowercase", description = "Доступные команды:")]
@@ -62,15 +72,14 @@ pub enum BotCommand {
     #[command(description = "URL safe base64 decoder. /b64d string")]
     B64D(String),
 
+    #[command(description = "Json pretty print. /jp json_string")]
+    Jp(String),
+
     #[command(
         parse_with = radix_parser,
         description = "Radix converter. /radix 2 16 1111"
     )]
     Radix(FromRadix, ToRadix, String),
-    // JsonPretty { ::serde_json::to_string_pretty(&obj)
-    //     value: String
-    // },
-    // Jwt { value: String },
     // #[command(description = "Запрос в wikipedia. Пример: /wikit простое число.")]
     // Wikit { query: String },
 }
