@@ -21,8 +21,10 @@
  *
  */
 
+use std::char::{ToLowercase, ToUppercase};
 use std::collections::HashMap;
 use std::fmt::Debug;
+use std::hash::Hash;
 use std::str::FromStr;
 use teloxide::utils::command::ParseError;
 
@@ -79,27 +81,51 @@ pub struct SwitchKeyboard {
     pub to_lang: ToLanguage,
 }
 
+trait SingleChar {
+    fn single_char_or_default(self) -> char;
+}
+
+impl SingleChar for &str {
+    fn single_char_or_default(self) -> char {
+        self.chars().last().unwrap_or_default()
+    }
+}
+
+impl SingleChar for ToLowercase {
+    fn single_char_or_default(self) -> char {
+        self.last().unwrap_or_default()
+    }
+}
+
+impl SingleChar for ToUppercase {
+    fn single_char_or_default(self) -> char {
+        self.last().unwrap_or_default()
+    }
+}
+
 impl SwitchKeyboard {
-    fn mapping_from_string(mapping_value: String) -> HashMap<String, String> {
-        let mut map = HashMap::new();
-        for line in mapping_value.lines() {
-            let (char_ru, char_en) = line.split_once(';').unwrap();
-            map.insert(char_ru.to_string(), char_en.to_string());
-        }
-        map
+    fn mapping_from_string(mapping_value: String) -> HashMap<char, char> {
+        mapping_value.lines().fold(HashMap::new(), |mut map, line| {
+            let (from, to) = line.split_once(';').unwrap_or_default();
+            map.insert(from.single_char_or_default(), to.single_char_or_default());
+            map
+        })
     }
 
-    pub fn switch_layout(&self, value: String) -> String {
-        let mapping = Self::mapping_from_string(RU_EN_CLASSIC_MAPPING.to_string());
-        let value = value.trim().to_lowercase();
+    pub fn switch_layout(&self, text: String) -> String {
+        let mapping = Self::mapping_from_string(String::from(RU_EN_CLASSIC_MAPPING));
 
-        let mut converted = String::new();
-        for char in value.chars() {
-            let char_as_string = String::from(char);
-            converted.push_str(mapping.get(&char_as_string).unwrap_or(&char_as_string));
-        }
+        text.chars().fold(String::new(), |mut s, char| {
+            let lower_cased_char = &char.to_lowercase().single_char_or_default();
+            let mut result = *mapping.get(lower_cased_char).unwrap_or(&char);
 
-        converted.trim().to_lowercase()
+            if char.is_uppercase() {
+                result = result.to_uppercase().single_char_or_default()
+            }
+
+            s.push(result);
+            s
+        })
     }
 }
 
