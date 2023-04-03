@@ -24,3 +24,4 @@ openssl-probe = "0.1.5"
 rand = "0.8.5"
 base64 = "0.21.0"
 serde_json = { version = "1.0.94", features = ["preserve_order"] }
+qrcode-generator = "4.1.7"
