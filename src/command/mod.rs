@@ -22,26 +22,19 @@
  */
 
 pub mod datetime_from_unix;
+pub mod encdec;
 pub mod radix;
 pub mod switch_keyboard;
 pub mod winner;
 
+use crate::command::encdec::EncDecFormat;
 use crate::command::radix::{FromRadix, ToRadix};
 use crate::command::switch_keyboard::{FromLanguage, Layout, ToLanguage};
+use encdec::encdec_parser;
 use radix::radix_parser;
 use switch_keyboard::skb_parser;
 use teloxide::utils::command::BotCommands;
-use teloxide::RequestError;
 use winner::winner_parser;
-
-pub struct BotError;
-
-impl BotError {
-    pub fn invalid_json(source: serde_json::Error, raw_json: &str) -> RequestError {
-        let raw = Box::from(raw_json);
-        RequestError::InvalidJson { source, raw }
-    }
-}
 
 #[derive(BotCommands, Debug, Clone)]
 #[command(rename_rule = "lowercase", description = "Доступные команды:")]
@@ -69,11 +62,17 @@ pub enum BotCommand {
     )]
     Winner(String),
 
-    #[command(description = "URL safe base64 encoder. /b64e string")]
-    B64E(String),
+    #[command(
+        parse_with = encdec_parser,
+        description = r#"Кодирует текст по заданному формату . /enc -f b64 text. Доступные форматы b64, url."#
+    )]
+    Encode(String, EncDecFormat),
 
-    #[command(description = "URL safe base64 decoder. /b64d string")]
-    B64D(String),
+    #[command(
+        parse_with = encdec_parser,
+        description = r#"Декодирует текст по заданному формату . /dec -f b64 text. Доступные форматы b64, url."#
+    )]
+    Decode(String, EncDecFormat),
 
     #[command(description = "Json pretty print. /jp json_string")]
     Jp(String),

@@ -26,15 +26,19 @@
 mod command;
 
 use crate::command::datetime_from_unix::unix_timestamp_to_datetime;
+use crate::command::encdec::EncDecFormat::Url;
+use crate::command::encdec::EncDecFormat::B64;
 use crate::command::radix::radix;
 use crate::command::switch_keyboard::SwitchKeyboard;
 use crate::command::winner::winner;
-use crate::command::{BotCommand, BotError};
+use crate::command::BotCommand;
+use crate::command::BotCommand::{Decode, Encode};
 use base64::engine::general_purpose;
 use base64::Engine;
 use log::info;
 use qrcode_generator::QrCodeEcc;
 use serde_json::Value;
+use std::borrow::Cow;
 use std::convert::Infallible;
 use std::env;
 use teloxide::prelude::{Message, ResponseResult};
@@ -44,7 +48,8 @@ use teloxide::update_listeners::webhooks::Options;
 use teloxide::update_listeners::{webhooks, UpdateListener};
 use teloxide::utils::command::BotCommands;
 use teloxide::Bot;
-use BotCommand::{Help, Jp, Qr, Radix, Skb, Utime, Winner, B64D, B64E};
+use url::form_urlencoded::{byte_serialize, parse};
+use BotCommand::{Help, Jp, Qr, Radix, Skb, Utime, Winner};
 
 #[tokio::main]
 async fn main() {
@@ -57,6 +62,7 @@ async fn main() {
     let listener = setup_listener(bot.clone()).await;
 
     teloxide::repl_with_listener(bot.clone(), answer, listener).await;
+    info!("bezzabot started!");
 }
 
 async fn setup_listener(bot: Bot) -> impl UpdateListener<Err = Infallible> + Send {
@@ -68,41 +74,71 @@ async fn setup_listener(bot: Bot) -> impl UpdateListener<Err = Infallible> + Sen
 
     let addr = ([0, 0, 0, 0], port).into();
 
-    let host = env::var("HOST_URL").expect("Set HOST_URL, please.");
-    let host = host.parse().expect("Incorrect Url format");
+    let host_env = env::var("HOST_URL").expect("Set HOST_URL, please.");
+    let host = host_env.parse().expect("Incorrect Url format");
 
-    webhooks::axum(bot, Options::new(addr, host))
+    let listener = webhooks::axum(bot, Options::new(addr, host))
         .await
-        .expect("Could not setup webhook")
+        .expect("Could not setup webhook");
+
+    info!("Listener run on {host_env} and address {addr}");
+
+    listener
 }
 
 async fn answer(bot: Bot, msg: Message, me: Me) -> ResponseResult<()> {
     let bot_name = me.username();
     let text = msg.text().unwrap_or("help");
 
-    let cmd = BotCommand::parse(text, bot_name).unwrap_or(Help);
+    // todo на текущий момент нет обработки ошибок и отображаем команду Help. Надо бы это исправить и возвращать текст с
+    // описание ошибки
+
+    let result = BotCommand::parse(text, bot_name);
+
+    if let Err(e) = result {
+        bot.send_message(msg.chat.id, e.to_string()).await?;
+        return Ok(());
+    }
+
+    let cmd = result.unwrap();
 
     match cmd {
-        B64E(input) => {
-            let result = general_purpose::URL_SAFE_NO_PAD.encode(input);
+        Encode(text, format) => {
+            let result = match format {
+                B64 => general_purpose::URL_SAFE_NO_PAD.encode(text),
+                Url => byte_serialize(text.as_bytes()).collect(),
+            };
             bot.send_message(msg.chat.id, result).await?
         }
-        B64D(input) => {
-            let result = general_purpose::URL_SAFE_NO_PAD
-                .decode(input)
-                .unwrap_or_default();
 
-            bot.send_message(msg.chat.id, String::from_utf8_lossy(&result))
-                .await?
+        Decode(text, format) => {
+            let result = match format {
+                B64 => general_purpose::URL_SAFE_NO_PAD.decode(text),
+                Url => {
+                    let decoded: String = parse(text.as_bytes())
+                        .map(|(key, val)| [key, val].concat())
+                        .collect();
+                    Ok(Vec::from(decoded))
+                }
+            };
+
+            let text = match &result {
+                Ok(bytes) => String::from_utf8_lossy(bytes),
+                Err(err) => Cow::from(err.to_string()),
+            };
+
+            bot.send_message(msg.chat.id, text).await?
         }
 
         Jp(json_string) => {
             // let example_json = r#"{"a": "b", "c" : [1,2,3,4], "d": {"d1": 123, "d2": 3}}"#;
-            let value: Value = serde_json::from_str(&json_string)
-                .map_err(|source| BotError::invalid_json(source, &json_string))?;
 
-            let prettified = serde_json::to_string_pretty(&value)
-                .map_err(|source| BotError::invalid_json(source, &json_string))?;
+            let value: Value = match serde_json::from_str(&json_string) {
+                Ok(v) => v,
+                Err(err) => Value::String(err.to_string()),
+            };
+
+            let prettified = serde_json::to_string_pretty(&value).unwrap();
 
             bot.send_message(msg.chat.id, prettified).await?
         }
