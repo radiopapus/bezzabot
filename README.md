@@ -45,9 +45,9 @@ curl -X POST https://api.telegram.org/bot{TOKEN_FROM_TELEGRAM}/setWebhook?url={N
 
 ```/winner``` — Выбирает случайный id из списка. Пример: /winner 1 2 3 4 5
 
-```/b64e``` — URL safe base64 encoder. /b64e string
+```/encode -f {b64, url} text``` — Кодирует строку в заданном формате. base84, urlencode. 
 
-```/b64d``` — URL safe base64 decoder. /b64d string
+```/decode -f {b64, url} text``` — Декодирует строку в заданном формате. base84, urlencode.
 
 ```/jp``` — Json pretty print. /jp json_string
 
