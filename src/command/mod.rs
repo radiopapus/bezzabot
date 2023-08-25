@@ -25,6 +25,7 @@ pub mod datetime_from_unix;
 pub mod encdec;
 pub mod radix;
 pub mod switch_keyboard;
+pub mod tracking;
 pub mod winner;
 
 use crate::command::encdec::EncDecFormat;
@@ -34,6 +35,7 @@ use encdec::encdec_parser;
 use radix::radix_parser;
 use switch_keyboard::skb_parser;
 use teloxide::utils::command::BotCommands;
+use tracking::tracking_parser;
 use winner::winner_parser;
 
 #[derive(BotCommands, Debug, Clone)]
@@ -55,6 +57,12 @@ pub enum BotCommand {
 
     #[command(description = "Генерирует qr code по тексту. Пример: /qr text")]
     Qr { text: String },
+
+    #[command(
+        parse_with = tracking_parser,
+        description = "Статус доставки через почту России. Пример: /tracking номер_заказа_14_символов"
+    )]
+    Tracking(String),
 
     #[command(
         parse_with = winner_parser,
