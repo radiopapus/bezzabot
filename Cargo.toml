@@ -23,6 +23,11 @@ openssl = { version = "0.10.45", default-features = false, features = ["vendored
 openssl-probe = "0.1.5"
 rand = "0.8.5"
 base64 = "0.21.0"
-serde_json = { version = "1.0.94", features = ["preserve_order"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0", features = ["preserve_order"] }
+serde_derive = "1.0"
 qrcode-generator = "4.1.7"
 url = "2.4.0"
+reqwest = "0.11.18"
+prettytable-rs = "0.10.0"
+thiserror = "1.0.47"

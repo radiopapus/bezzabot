@@ -23,18 +23,15 @@
 
 #![allow(clippy::or_fun_call)]
 
-mod command;
-
-use crate::command::datetime_from_unix::unix_timestamp_to_datetime;
-use crate::command::encdec::EncDecFormat::Url;
-use crate::command::encdec::EncDecFormat::B64;
-use crate::command::radix::radix;
-use crate::command::switch_keyboard::SwitchKeyboard;
-use crate::command::winner::winner;
-use crate::command::BotCommand;
-use crate::command::BotCommand::{Decode, Encode};
 use base64::engine::general_purpose;
 use base64::Engine;
+use bezzabot::command::datetime_from_unix::unix_timestamp_to_datetime;
+use bezzabot::command::encdec::EncDecFormat::{Url, B64};
+use bezzabot::command::radix::radix;
+use bezzabot::command::switch_keyboard::SwitchKeyboard;
+use bezzabot::command::tracking::post_ru::PostRu;
+use bezzabot::command::winner::winner;
+use bezzabot::command::BotCommand;
 use log::info;
 use qrcode_generator::QrCodeEcc;
 use serde_json::Value;
@@ -49,7 +46,7 @@ use teloxide::update_listeners::{webhooks, UpdateListener};
 use teloxide::utils::command::BotCommands;
 use teloxide::Bot;
 use url::form_urlencoded::{byte_serialize, parse};
-use BotCommand::{Help, Jp, Qr, Radix, Skb, Utime, Winner};
+use BotCommand::{Decode, Encode, Help, Jp, Qr, Radix, Skb, Tracking, Utime, Winner};
 
 #[tokio::main]
 async fn main() {
@@ -128,6 +125,22 @@ async fn answer(bot: Bot, msg: Message, me: Me) -> ResponseResult<()> {
             };
 
             bot.send_message(msg.chat.id, text).await?
+        }
+
+        Tracking(barcode) => {
+            let post = PostRu::default();
+
+            let tracking_result = post.fetch_by_barcode(barcode).await;
+
+            if let Err(err) = tracking_result {
+                bot.send_message(msg.chat.id, err.to_string()).await?;
+                return Ok(());
+            }
+
+            let tracking_model = tracking_result.unwrap();
+
+            bot.send_message(msg.chat.id, tracking_model.as_text_report())
+                .await?
         }
 
         Jp(json_string) => {
