@@ -21,8 +21,8 @@
  *
  */
 
+use crate::command::BezzabotError;
 use crate::model::tracking::TrackingModel;
-use serde_json::Error;
 
 pub struct PostRu {
     tracking_endpoint: String,
@@ -41,18 +41,18 @@ impl PostRu {
         }
     }
 
-    pub async fn fetch_by_barcode(&self, barcode: String) -> Result<TrackingModel, Error> {
+    pub async fn fetch_by_barcode(&self, barcode: String) -> Result<TrackingModel, BezzabotError> {
         let params = format!("by-barcodes?language=ru&track-numbers={barcode}");
 
         let by_barcode_endpoint = format!("{}{}", self.tracking_endpoint, params);
 
         let json = reqwest::get(by_barcode_endpoint)
             .await
-            .unwrap()
+            .map_err(BezzabotError::FetchError)?
             .text()
             .await
-            .unwrap();
+            .map_err(BezzabotError::FetchError)?;
 
-        serde_json::from_str(&json)
+        serde_json::from_str(&json).map_err(BezzabotError::SerdeError)
     }
 }

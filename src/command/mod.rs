@@ -38,6 +38,24 @@ use teloxide::utils::command::BotCommands;
 use tracking::tracking_parser;
 use winner::winner_parser;
 
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum BezzabotError {
+    #[error("fetch data error ")]
+    FetchError(#[from] reqwest::Error),
+    #[error("serde data error ")]
+    SerdeError(#[from] serde_json::Error),
+    #[error("parse data error `{0}`")]
+    ParseError(String),
+    // #[error("the data for key `{0}` is not available")]
+    // Redaction(String),
+    // #[error("invalid header (expected {expected:?}, found {found:?})")]
+    // InvalidHeader { expected: String, found: String },
+    #[error("unknown error")]
+    Unknown,
+}
+
 #[derive(BotCommands, Debug, Clone)]
 #[command(rename_rule = "lowercase", description = "Доступные команды:")]
 pub enum BotCommand {
@@ -60,7 +78,7 @@ pub enum BotCommand {
 
     #[command(
         parse_with = tracking_parser,
-        description = "Статус доставки через почту России. Пример: /tracking номер_заказа_14_символов"
+        description = "Статус доставки через почту России. Пример: /tracking номер_заказа"
     )]
     Tracking(String),
 
