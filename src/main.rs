@@ -177,7 +177,10 @@ async fn answer(bot: Bot, msg: Message, me: Me) -> ResponseResult<()> {
         }
 
         Utime { timestamp } => {
-            let result = unix_timestamp_to_datetime(timestamp);
+            let result = match unix_timestamp_to_datetime(timestamp) {
+                Ok(v) => v,
+                Err(err) => err.to_string(),
+            };
             bot.send_message(msg.chat.id, result).await?
         }
 
