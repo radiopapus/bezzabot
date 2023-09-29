@@ -28,8 +28,7 @@ pub fn unix_timestamp_to_datetime(
     timestamp: String, /*, tz: TimeZone*/
 ) -> Result<String, BezzabotError> {
     let timestamp_sec: i64 = timestamp.parse().unwrap_or(Utc::now().timestamp());
-    let naive = NaiveDateTime::from_timestamp_opt(timestamp_sec, 0);
-    match naive {
+    match NaiveDateTime::from_timestamp_opt(timestamp_sec, 0) {
         Some(time) => {
             let dt: DateTime<Utc> = DateTime::from_utc(time, Utc);
             Ok(dt.format("%Y-%m-%d %H:%M:%S").to_string())
