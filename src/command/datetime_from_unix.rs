@@ -21,11 +21,22 @@
  *
  */
 
+use crate::command::BezzabotError;
 use chrono::{DateTime, NaiveDateTime, Utc};
 
-pub fn unix_timestamp_to_datetime(timestamp: String /*, tz: TimeZone*/) -> String {
+pub fn unix_timestamp_to_datetime(
+    timestamp: String, /*, tz: TimeZone*/
+) -> Result<String, BezzabotError> {
     let timestamp_sec: i64 = timestamp.parse().unwrap_or(Utc::now().timestamp());
-    let naive = NaiveDateTime::from_timestamp_opt(timestamp_sec, 0).unwrap();
-    let dt: DateTime<Utc> = DateTime::from_utc(naive, Utc);
-    dt.format("%Y-%m-%d %H:%M:%S").to_string()
+    let naive = NaiveDateTime::from_timestamp_opt(timestamp_sec, 0);
+    match naive {
+        Some(time) => {
+            let dt: DateTime<Utc> = DateTime::from_utc(time, Utc);
+            Ok(dt.format("%Y-%m-%d %H:%M:%S").to_string())
+        }
+        None => Err(BezzabotError::ParseError(format!(
+            "Incorrect format for timestamp {}",
+            timestamp
+        ))),
+    }
 }
