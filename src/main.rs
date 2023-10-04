@@ -30,6 +30,7 @@ use bezzabot::command::encdec::EncDecFormat::{Url, B64};
 use bezzabot::command::radix::radix;
 use bezzabot::command::switch_keyboard::SwitchKeyboard;
 use bezzabot::command::tracking::post_ru::PostRu;
+use bezzabot::command::transform::{DavinciYoutubeTransformer, TransformData};
 use bezzabot::command::winner::winner;
 use bezzabot::command::BotCommand;
 use log::info;
@@ -38,15 +39,15 @@ use serde_json::Value;
 use std::borrow::Cow;
 use std::convert::Infallible;
 use std::env;
+use teloxide::net::Download;
 use teloxide::prelude::{Message, ResponseResult};
 use teloxide::requests::Requester;
-use teloxide::types::{InputFile, Me};
+use teloxide::types::{InputFile, Me, MediaKind, MessageKind};
 use teloxide::update_listeners::webhooks::Options;
 use teloxide::update_listeners::{webhooks, UpdateListener};
 use teloxide::utils::command::BotCommands;
 use teloxide::Bot;
 use url::form_urlencoded::{byte_serialize, parse};
-use BotCommand::{Decode, Encode, Help, Jp, Qr, Radix, Skb, Tracking, Utime, Winner};
 
 #[tokio::main]
 async fn main() {
@@ -85,12 +86,28 @@ async fn setup_listener(bot: Bot) -> impl UpdateListener<Err = Infallible> + Sen
 
 async fn answer(bot: Bot, msg: Message, me: Me) -> ResponseResult<()> {
     let bot_name = me.username();
-    let text = msg.text().unwrap_or("help");
+
+    let (text, doc) = match msg.kind {
+        MessageKind::Common(mc) => match mc.media_kind {
+            MediaKind::Document(d) => {
+                let caption = d.caption.unwrap_or(String::from("davinci -> yt"));
+                let (from, to) = caption.split_once(',').unwrap_or(("davinci", "yt"));
+                bot.send_message(msg.chat.id, caption.to_string()).await?;
+                (
+                    format!("/{command} {from} {to}", command = "transform"),
+                    Some(d.document),
+                )
+            }
+            MediaKind::Text(text) => (text.text, None),
+            _ => ("help".to_string(), None),
+        },
+        _ => ("help".to_string(), None),
+    };
 
     // todo на текущий момент нет обработки ошибок и отображаем команду Help. Надо бы это исправить и возвращать текст с
     // описание ошибки
 
-    let result = BotCommand::parse(text, bot_name);
+    let result = BotCommand::parse(&text, bot_name);
 
     if let Err(e) = result {
         bot.send_message(msg.chat.id, e.to_string()).await?;
@@ -100,7 +117,7 @@ async fn answer(bot: Bot, msg: Message, me: Me) -> ResponseResult<()> {
     let cmd = result.unwrap();
 
     match cmd {
-        Encode(text, format) => {
+        BotCommand::Encode(text, format) => {
             let result = match format {
                 B64 => general_purpose::URL_SAFE_NO_PAD.encode(text),
                 Url => byte_serialize(text.as_bytes()).collect(),
@@ -108,7 +125,7 @@ async fn answer(bot: Bot, msg: Message, me: Me) -> ResponseResult<()> {
             bot.send_message(msg.chat.id, result).await?
         }
 
-        Decode(text, format) => {
+        BotCommand::Decode(text, format) => {
             let result = match format {
                 B64 => general_purpose::URL_SAFE_NO_PAD.decode(text),
                 Url => {
@@ -127,7 +144,7 @@ async fn answer(bot: Bot, msg: Message, me: Me) -> ResponseResult<()> {
             bot.send_message(msg.chat.id, text).await?
         }
 
-        Tracking(barcode) => {
+        BotCommand::Tracking(barcode) => {
             let post = PostRu::default();
 
             let tracking_result = post.fetch_by_barcode(barcode).await;
@@ -138,12 +155,10 @@ async fn answer(bot: Bot, msg: Message, me: Me) -> ResponseResult<()> {
             }
 
             let tracking_model = tracking_result.unwrap();
-
             bot.send_message(msg.chat.id, tracking_model.as_text_report())
                 .await?
         }
-
-        Jp(json_string) => {
+        BotCommand::Jp(json_string) => {
             // let example_json = r#"{"a": "b", "c" : [1,2,3,4], "d": {"d1": 123, "d2": 3}}"#;
 
             let value: Value = match serde_json::from_str(&json_string) {
@@ -155,13 +170,12 @@ async fn answer(bot: Bot, msg: Message, me: Me) -> ResponseResult<()> {
 
             bot.send_message(msg.chat.id, prettified).await?
         }
-
-        Help => {
+        BotCommand::Help => {
             bot.send_message(msg.chat.id, BotCommand::descriptions().to_string())
                 .await?
         }
 
-        Skb(text, layout, from_lang, to_lang) => {
+        BotCommand::Skb(text, layout, from_lang, to_lang) => {
             let skb = SwitchKeyboard {
                 layout,
                 from_lang,
@@ -171,12 +185,7 @@ async fn answer(bot: Bot, msg: Message, me: Me) -> ResponseResult<()> {
             bot.send_message(msg.chat.id, result).await?
         }
 
-        Radix(from, to, value) => {
-            let result = radix(from, to, value.as_str());
-            bot.send_message(msg.chat.id, result).await?
-        }
-
-        Utime { timestamp } => {
+        BotCommand::Utime { timestamp } => {
             let result = match unix_timestamp_to_datetime(timestamp) {
                 Ok(v) => v,
                 Err(err) => err.to_string(),
@@ -184,7 +193,27 @@ async fn answer(bot: Bot, msg: Message, me: Me) -> ResponseResult<()> {
             bot.send_message(msg.chat.id, result).await?
         }
 
-        Qr { text } => {
+        BotCommand::Transform(from, to) => {
+            let mut dst: Vec<u8> = vec![];
+
+            let file = bot.get_file(doc.unwrap().file.id).await?;
+            bot.download_file(&file.path, &mut dst).await?;
+
+            let transformer = match (&from, &to) {
+                (from, to) if from == "davinci" && to == "yt" => DavinciYoutubeTransformer,
+                _ => DavinciYoutubeTransformer,
+            };
+
+            let markers = transformer.transform(TransformData::Bytes(&dst)).await;
+
+            let text = match markers {
+                Ok(markers) => markers,
+                Err(err) => err.to_string(),
+            };
+
+            bot.send_message(msg.chat.id, text).await?
+        }
+        BotCommand::Qr { text } => {
             let result: Vec<u8> =
                 qrcode_generator::to_png_to_vec(text, QrCodeEcc::Low, 256).unwrap();
 
@@ -193,7 +222,12 @@ async fn answer(bot: Bot, msg: Message, me: Me) -> ResponseResult<()> {
             bot.send_photo(msg.chat.id, inner).await?
         }
 
-        Winner(input) => {
+        BotCommand::Radix(from, to, value) => {
+            let result = radix(from, to, value.as_str());
+            bot.send_message(msg.chat.id, result).await?
+        }
+
+        BotCommand::Winner(input) => {
             let result = winner(input);
             bot.send_message(msg.chat.id, result).await?
         }

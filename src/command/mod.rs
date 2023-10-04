@@ -26,6 +26,7 @@ pub mod encdec;
 pub mod radix;
 pub mod switch_keyboard;
 pub mod tracking;
+pub mod transform;
 pub mod winner;
 
 use crate::command::encdec::EncDecFormat;
@@ -36,6 +37,7 @@ use radix::radix_parser;
 use switch_keyboard::skb_parser;
 use teloxide::utils::command::BotCommands;
 use tracking::tracking_parser;
+use transform::transform_parser;
 use winner::winner_parser;
 
 use thiserror::Error;
@@ -44,10 +46,16 @@ use thiserror::Error;
 pub enum BezzabotError {
     #[error("fetch data error ")]
     FetchError(#[from] reqwest::Error),
+
     #[error("serde data error ")]
     SerdeError(#[from] serde_json::Error),
+
+    #[error("csv error ")]
+    CsvError(#[from] csv::Error),
+
     #[error("parse data error `{0}`")]
     ParseError(String),
+
     // #[error("the data for key `{0}` is not available")]
     // Redaction(String),
     // #[error("invalid header (expected {expected:?}, found {found:?})")]
@@ -73,21 +81,11 @@ pub enum BotCommand {
     )]
     Utime { timestamp: String },
 
-    #[command(description = "Генерирует qr code по тексту. Пример: /qr text")]
-    Qr { text: String },
-
     #[command(
         parse_with = tracking_parser,
         description = "Статус доставки через почту России. Пример: /tracking номер_заказа"
     )]
     Tracking(String),
-
-    #[command(
-        parse_with = winner_parser,
-        description = r#"Выбирает случайный id из списка. Пример: /winner 1 2 3 4 5"#
-    )]
-    Winner(String),
-
     #[command(
         parse_with = encdec_parser,
         description = r#"Кодирует текст по заданному формату . /enc -f b64 text. Доступные форматы b64, url."#
@@ -103,11 +101,25 @@ pub enum BotCommand {
     #[command(description = "Json pretty print. /jp json_string")]
     Jp(String),
 
+    #[command(description = "Генерирует qr code по тексту. Пример: /qr text")]
+    Qr { text: String },
+
     #[command(
         parse_with = radix_parser,
         description = "Radix converter. /radix 2 16 1111"
     )]
     Radix(FromRadix, ToRadix, String),
+
+    #[command(
+        parse_with = transform_parser,
+        description = "Преобразует данные из одного формата в другой /transform {from:davinci} {to:yt} {file.csv}"
+    )]
+    Transform(String, String),
+    #[command(
+        parse_with = winner_parser,
+        description = r#"Выбирает случайный id из списка. Пример: /winner 1 2 3 4 5"#
+    )]
+    Winner(String),
     // #[command(description = "Запрос в wikipedia. Пример: /wikit простое число.")]
     // Wikit { query: String },
 }

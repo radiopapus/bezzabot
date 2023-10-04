@@ -21,5 +21,7 @@
  *
  */
 
+extern crate core;
+
 pub mod command;
 pub mod model;
