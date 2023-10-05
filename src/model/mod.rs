@@ -21,4 +21,5 @@
  *
  */
 
+pub mod markers;
 pub mod tracking;

@@ -1,6 +1,6 @@
 [package]
 name = "bezzabot"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2021"
 keywords = ["teloxide", "telegram", "telegram-bot", "bot", "raspberry pi", "educational", "pet-project"]
 categories = ["web-programming", "asynchronous"]
@@ -31,3 +31,4 @@ url = "2.4.0"
 reqwest = "0.11.18"
 prettytable-rs = "0.10.0"
 thiserror = "1.0.47"
+csv = "1.2.2"
