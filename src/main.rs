@@ -30,7 +30,7 @@ use bezzabot::command::encdec::EncDecFormat::{Url, B64};
 use bezzabot::command::radix::radix;
 use bezzabot::command::switch_keyboard::SwitchKeyboard;
 use bezzabot::command::tracking::post_ru::PostRu;
-use bezzabot::command::transform::{DavinciYoutubeTransformer, TransformData};
+use bezzabot::command::transform::DavinciYoutubeTransformer;
 use bezzabot::command::winner::winner;
 use bezzabot::command::BotCommand;
 use log::info;
@@ -196,20 +196,18 @@ async fn answer(bot: Bot, msg: Message, me: Me) -> ResponseResult<()> {
         BotCommand::Transform(from, to) => {
             let mut dst: Vec<u8> = vec![];
 
-            let file = bot.get_file(doc.unwrap().file.id).await?;
-            bot.download_file(&file.path, &mut dst).await?;
+            let transformer = DavinciYoutubeTransformer;
 
-            let transformer = match (&from, &to) {
-                (from, to) if from == "davinci" && to == "yt" => DavinciYoutubeTransformer,
-                _ => DavinciYoutubeTransformer,
-            };
+            if let Some(d) = doc {
+                if from == "davinci" && to == "yt" {
+                    let file = bot.get_file(d.file.id).await?;
+                    bot.download_file(&file.path, &mut dst).await?;
+                }
+            }
 
-            let markers = transformer.transform(TransformData::Bytes(&dst)).await;
+            let result = transformer.transform(&dst).await;
 
-            let text = match markers {
-                Ok(markers) => markers,
-                Err(err) => err.to_string(),
-            };
+            let text = result.unwrap_or_else(|e| e.to_string());
 
             bot.send_message(msg.chat.id, text).await?
         }

@@ -33,7 +33,7 @@ pub struct DavinciMarker {
     #[serde(rename = "Notes")]
     pub notes: String,
     #[serde(rename = "Source In")]
-    pub start_at: String, // 00:00:02:27
+    pub start_at: String, // 00:00:02:27 - часы:минуты:сек:кадры
     #[serde(flatten)]
     extra: HashMap<String, Value>,
 }
@@ -41,14 +41,15 @@ pub struct DavinciMarker {
 #[derive(Debug)]
 pub struct YoutubeTimeTag {
     pub time: String,   // HH:mm:ss
-    pub marker: String, // marker
+    pub marker: String, // имя или заметки
 }
 
 impl YoutubeTimeTag {
     pub fn from_davinci(davinci: DavinciMarker) -> Self {
-        let len = davinci.start_at.len();
-        let time = davinci.start_at[0..len - 3].to_string();
-        let marker = davinci.name.unwrap_or(davinci.notes.to_string());
+        let start_at = davinci.start_at;
+        let end_index = start_at.len() - 3; // HH:mm:ss:ff - где ff - это кадры - не нужны для yt
+        let time = start_at[0..end_index].to_string();
+        let marker = davinci.name.unwrap_or(davinci.notes);
         YoutubeTimeTag { time, marker }
     }
 }

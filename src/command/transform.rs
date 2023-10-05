@@ -50,31 +50,23 @@ pub fn transform_parser(input: String) -> Result<(TransformFrom, TransformTo), P
     Ok((from.into(), to.into()))
 }
 
-pub enum TransformData<'a> {
-    Bytes(&'a [u8]),
-}
-
 pub struct DavinciYoutubeTransformer;
 
 impl<'a> DavinciYoutubeTransformer {
-    pub async fn transform(&self, data: TransformData<'a>) -> Result<String, BezzabotError> {
-        match data {
-            TransformData::Bytes(bytes) => {
-                let mut reader = ReaderBuilder::new().from_reader(bytes);
-                let mut lines = vec![];
+    pub async fn transform(&self, bytes: &[u8]) -> Result<String, BezzabotError> {
+        let mut reader = ReaderBuilder::new().from_reader(bytes);
+        let mut lines = vec![];
 
-                for davinci in reader.deserialize::<DavinciMarker>() {
-                    let marker = davinci.map_err(BezzabotError::CsvError)?;
-                    lines.push(YoutubeTimeTag::from_davinci(marker))
-                }
-
-                let result = lines
-                    .iter()
-                    .map(|yt| format!("{} - {}", yt.time, yt.marker))
-                    .collect::<Vec<String>>()
-                    .join("\n");
-                Ok(result)
-            }
+        for davinci in reader.deserialize::<DavinciMarker>() {
+            let marker = davinci.map_err(BezzabotError::CsvError)?;
+            lines.push(YoutubeTimeTag::from_davinci(marker))
         }
+
+        let result = lines
+            .iter()
+            .map(|yt| format!("{} - {}", yt.time, yt.marker))
+            .collect::<Vec<String>>()
+            .join("\n");
+        Ok(result)
     }
 }
