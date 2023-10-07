@@ -45,11 +45,11 @@ pub struct YoutubeTimeTag {
 }
 
 impl YoutubeTimeTag {
-    pub fn from_davinci(davinci: DavinciMarker) -> Self {
-        let start_at = davinci.start_at;
+    pub fn from_davinci(marker: DavinciMarker) -> Self {
+        let start_at = marker.start_at;
         let end_index = start_at.len() - 3; // HH:mm:ss:ff - где ff - это кадры - не нужны для yt
         let time = start_at[0..end_index].to_string();
-        let marker = davinci.name.unwrap_or(davinci.notes);
+        let marker = marker.name.unwrap_or(marker.notes);
         YoutubeTimeTag { time, marker }
     }
 }

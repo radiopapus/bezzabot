@@ -21,7 +21,22 @@
  *
  */
 
-pub mod command;
-pub mod error;
-pub mod listener;
-pub mod model;
+use crate::command::BotCommand;
+use rand::Rng;
+use teloxide::prelude::{Message, Requester, ResponseResult};
+use teloxide::{respond, Bot};
+
+pub async fn winner_handler(bot: Bot, msg: Message, cmd: BotCommand) -> ResponseResult<()> {
+    let BotCommand::Winner(input) = cmd else {
+        return respond(());
+    };
+
+    let args: Vec<&str> = input.split_whitespace().collect();
+    let s: Vec<String> = args.iter().map(ToString::to_string).collect();
+
+    let result = s[rand::thread_rng().gen_range(0..s.len())].to_string();
+
+    bot.send_message(msg.chat.id, result).await?;
+
+    respond(())
+}

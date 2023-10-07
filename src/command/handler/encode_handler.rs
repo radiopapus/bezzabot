@@ -21,7 +21,25 @@
  *
  */
 
-pub mod command;
-pub mod error;
-pub mod listener;
-pub mod model;
+use crate::command::parser::encdec_parser::EncDecFormat;
+use crate::command::BotCommand;
+use base64::engine::general_purpose;
+use base64::Engine;
+use teloxide::prelude::{Message, Requester, ResponseResult};
+use teloxide::{respond, Bot};
+use url::form_urlencoded::byte_serialize;
+
+pub async fn encode_handler(bot: Bot, msg: Message, cmd: BotCommand) -> ResponseResult<()> {
+    let BotCommand::Encode(text, format) = cmd else {
+        return respond(());
+    };
+
+    let reply = match format {
+        EncDecFormat::B64 => general_purpose::URL_SAFE_NO_PAD.encode(text),
+        EncDecFormat::Url => byte_serialize(text.as_bytes()).collect(),
+    };
+
+    bot.send_message(msg.chat.id, reply).await?;
+
+    respond(())
+}

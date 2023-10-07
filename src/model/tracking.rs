@@ -21,7 +21,7 @@
  *
  */
 
-use chrono::{DateTime, Utc};
+use chrono::DateTime;
 use prettytable::format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR;
 use prettytable::{Cell, Row, Table};
 use serde::Deserialize;

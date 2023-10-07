@@ -21,19 +21,18 @@
  *
  */
 
-use rand::Rng;
-use teloxide::utils::command::ParseError;
+use crate::command::BotCommand;
+use teloxide::prelude::{Message, Requester, ResponseResult};
+use teloxide::utils::command::BotCommands;
+use teloxide::{respond, Bot};
 
-pub fn winner_parser(input: String) -> Result<(String,), ParseError> {
-    match input.len() {
-        0 => Ok(("Нужен список id через запятую".into(),)),
-        _len => Ok((input,)),
-    }
-}
+pub async fn help_handler(bot: Bot, msg: Message, cmd: BotCommand) -> ResponseResult<()> {
+    let BotCommand::Help = cmd else {
+        return respond(());
+    };
 
-pub fn winner(input: String) -> String {
-    let args: Vec<&str> = input.split_whitespace().collect();
-    let s: Vec<String> = args.iter().map(ToString::to_string).collect();
+    bot.send_message(msg.chat.id, BotCommand::descriptions().to_string())
+        .await?;
 
-    s[rand::thread_rng().gen_range(0..s.len())].to_string()
+    respond(())
 }

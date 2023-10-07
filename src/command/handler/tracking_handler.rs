@@ -20,27 +20,25 @@
  *
  *
  */
-
-use crate::command::BezzabotError;
+use crate::command::BotCommand;
+use crate::error::BezzabotError;
 use crate::model::tracking::TrackingModel;
+use teloxide::prelude::{Message, Requester, ResponseResult};
+use teloxide::{respond, Bot};
 
-pub struct PostRu {
+pub struct PostRuService {
     tracking_endpoint: String,
 }
 
-impl Default for PostRu {
+impl Default for PostRuService {
     fn default() -> Self {
-        PostRu::new()
-    }
-}
-
-impl PostRu {
-    pub fn new() -> Self {
         Self {
             tracking_endpoint: String::from("https://www.pochta.ru/api/tracking/api/v1/trackings/"),
         }
     }
+}
 
+impl PostRuService {
     pub async fn fetch_by_barcode(&self, barcode: String) -> Result<TrackingModel, BezzabotError> {
         let params = format!("by-barcodes?language=ru&track-numbers={barcode}");
 
@@ -55,4 +53,23 @@ impl PostRu {
 
         serde_json::from_str(&json).map_err(BezzabotError::SerdeError)
     }
+}
+
+pub async fn tracking_handler(bot: Bot, msg: Message, cmd: BotCommand) -> ResponseResult<()> {
+    let BotCommand::Tracking(barcode) = cmd else {
+        return respond(());
+    };
+
+    let post = PostRuService::default();
+
+    let tracking_result = post.fetch_by_barcode(barcode).await;
+
+    let result = match tracking_result {
+        Ok(model) => model.as_text_report(),
+        Err(err) => err.to_string(),
+    };
+
+    bot.send_message(msg.chat.id, result).await?;
+
+    respond(())
 }
