@@ -21,7 +21,11 @@
  *
  */
 
-pub mod command;
-pub mod error;
-pub mod listener;
-pub mod model;
+use teloxide::utils::command::ParseError;
+
+pub fn winner_parser(input: String) -> Result<(String,), ParseError> {
+    match input.len() {
+        0 => Ok(("Нужен список id через запятую".into(),)),
+        _len => Ok((input,)),
+    }
+}

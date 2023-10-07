@@ -21,21 +21,22 @@
  *
  */
 
-use crate::command::BezzabotError;
-use chrono::{DateTime, NaiveDateTime, Utc};
+use crate::command::BotCommand;
+use qrcode_generator::QrCodeEcc;
+use teloxide::prelude::{Message, Requester, ResponseResult};
+use teloxide::types::InputFile;
+use teloxide::{respond, Bot};
 
-pub fn unix_timestamp_to_datetime(
-    timestamp: String, /*, tz: TimeZone*/
-) -> Result<String, BezzabotError> {
-    let timestamp_sec: i64 = timestamp.parse().unwrap_or(Utc::now().timestamp());
-    match NaiveDateTime::from_timestamp_opt(timestamp_sec, 0) {
-        Some(time) => {
-            let dt: DateTime<Utc> = DateTime::from_utc(time, Utc);
-            Ok(dt.format("%Y-%m-%d %H:%M:%S").to_string())
-        }
-        None => Err(BezzabotError::ParseError(format!(
-            "Incorrect format for timestamp {}",
-            timestamp
-        ))),
-    }
+pub async fn qr_handler(bot: Bot, msg: Message, cmd: BotCommand) -> ResponseResult<()> {
+    let BotCommand::Qr(text) = cmd else {
+        return respond(());
+    };
+
+    let result: Vec<u8> = qrcode_generator::to_png_to_vec(text, QrCodeEcc::Low, 256).unwrap();
+
+    let inner = InputFile::memory(result);
+
+    bot.send_photo(msg.chat.id, inner).await?;
+
+    respond(())
 }

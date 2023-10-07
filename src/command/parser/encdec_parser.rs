@@ -21,34 +21,34 @@
  *
  */
 
-pub mod post_ru;
-
 use teloxide::utils::command::ParseError;
 
-pub type Barcode = String;
+#[derive(Clone, Debug)]
+pub enum EncDecFormat {
+    B64,
+    Url,
+}
 
-const BARCODE_SIZE_RU: usize = 14;
-const BARCODE_SIZE_GLOBAL: usize = 13;
-
-pub fn tracking_parser(input: String) -> Result<(Barcode,), ParseError> {
+pub fn encdec_parser(input: String) -> Result<(String, EncDecFormat), ParseError> {
     let args: Vec<&str> = input.split_whitespace().collect();
 
-    if args.len() != 1 {
+    if args.len() <= 2 {
         return Err(ParseError::IncorrectFormat(
-            "Неверный номер трекинга. Номер это число из 14 знаков.".into(),
+            "Пример /enc -f b64 text".into(),
         ));
     }
 
-    let barcode: Barcode = args[0].chars().filter(|c| !c.is_whitespace()).collect();
+    let format = match args[1] {
+        "b64" => EncDecFormat::B64,
+        "url" => EncDecFormat::Url,
+        _ => {
+            return Err(ParseError::IncorrectFormat(
+                "Available formats are b64, url.".into(),
+            ))
+        }
+    };
 
-    let valid_barcode = (barcode.len() == BARCODE_SIZE_RU || barcode.len() == BARCODE_SIZE_GLOBAL)
-        && barcode.chars().all(|c| c.is_alphanumeric());
+    let string: Vec<String> = args[2..].iter().map(|c| c.to_string()).collect();
 
-    if !valid_barcode {
-        return Err(ParseError::IncorrectFormat(
-            "Неверный номер трекинга. Должен быть 14 значным числом.".into(),
-        ));
-    }
-
-    Ok((barcode,))
+    Ok((string.join(" "), format))
 }

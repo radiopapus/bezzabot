@@ -14,11 +14,9 @@ codegen-units = 1
 [dependencies]
 teloxide = { version = "0.12", features = ["macros", "rand", "webhooks-axum"] }
 log = "0.4"
-pretty_env_logger = "0.4"
 tokio = { version =  "1.8", features = ["rt-multi-thread", "macros"] }
 dotenv = "0.15.0"
 chrono = "0.4"
-# async-process = "1.6.0" run command from cli in async mode
 openssl = { version = "0.10.45", default-features = false, features = ["vendored"] }
 openssl-probe = "0.1.5"
 rand = "0.8.5"

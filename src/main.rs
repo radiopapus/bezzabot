@@ -23,213 +23,78 @@
 
 #![allow(clippy::or_fun_call)]
 
-use base64::engine::general_purpose;
-use base64::Engine;
-use bezzabot::command::datetime_from_unix::unix_timestamp_to_datetime;
-use bezzabot::command::encdec::EncDecFormat::{Url, B64};
-use bezzabot::command::radix::radix;
-use bezzabot::command::switch_keyboard::SwitchKeyboard;
-use bezzabot::command::tracking::post_ru::PostRu;
-use bezzabot::command::transform::DavinciYoutubeTransformer;
-use bezzabot::command::winner::winner;
+use bezzabot::command::handler::decode_handler::decode_handler;
+use bezzabot::command::handler::encode_handler::encode_handler;
+use bezzabot::command::handler::help_handler::help_handler;
+use bezzabot::command::handler::jp_handler::jp_handler;
+use bezzabot::command::handler::qr_handler::qr_handler;
+use bezzabot::command::handler::radix_handler::radix_handler;
+use bezzabot::command::handler::switch_keyboard_handler::skb_handler;
+use bezzabot::command::handler::tracking_handler::tracking_handler;
+use bezzabot::command::handler::transform_handler::transform_handler;
+use bezzabot::command::handler::unixtime_handler::unixtime_handler;
+use bezzabot::command::handler::winner_handler::winner_handler;
 use bezzabot::command::BotCommand;
+use bezzabot::listener::setup_listener;
 use log::info;
-use qrcode_generator::QrCodeEcc;
-use serde_json::Value;
-use std::borrow::Cow;
-use std::convert::Infallible;
-use std::env;
-use teloxide::net::Download;
-use teloxide::prelude::{Message, ResponseResult};
+use teloxide::dispatching::{Dispatcher, HandlerExt, UpdateFilterExt};
+use teloxide::dptree::{case, endpoint};
+use teloxide::error_handlers::LoggingErrorHandler;
+use teloxide::prelude::{Message, Update};
 use teloxide::requests::Requester;
-use teloxide::types::{InputFile, Me, MediaKind, MessageKind};
-use teloxide::update_listeners::webhooks::Options;
-use teloxide::update_listeners::{webhooks, UpdateListener};
-use teloxide::utils::command::BotCommands;
-use teloxide::Bot;
-use url::form_urlencoded::{byte_serialize, parse};
+use teloxide::{dptree, respond, Bot};
 
 #[tokio::main]
 async fn main() {
-    pretty_env_logger::init();
     dotenv::dotenv().ok();
 
     info!("Starting bezzabot...");
 
     let bot = Bot::from_env();
+
+    // настраиваем веб-сервер
     let listener = setup_listener(bot.clone()).await;
 
-    teloxide::repl_with_listener(bot.clone(), answer, listener).await;
-    info!("bezzabot started!");
-}
-
-async fn setup_listener(bot: Bot) -> impl UpdateListener<Err = Infallible> + Send {
-    info!("Setup webhook...");
-    let port = env::var("PORT").expect("Set PORT, please.");
-    let port: u16 = port
-        .parse()
-        .expect("Could not convert port from env var PORT value");
-
-    let addr = ([0, 0, 0, 0], port).into();
-
-    let host_env = env::var("HOST_URL").expect("Set HOST_URL, please.");
-    let host = host_env.parse().expect("Incorrect Url format");
-
-    let listener = webhooks::axum(bot, Options::new(addr, host))
-        .await
-        .expect("Could not setup webhook");
-
-    info!("Listener run on {host_env} and address {addr}");
-
-    listener
-}
-
-async fn answer(bot: Bot, msg: Message, me: Me) -> ResponseResult<()> {
-    let bot_name = me.username();
-
-    let (text, doc) = match msg.kind {
-        MessageKind::Common(mc) => match mc.media_kind {
-            MediaKind::Document(d) => {
-                let caption = d.caption.unwrap_or(String::from("davinci -> yt"));
-                let (from, to) = caption.split_once(',').unwrap_or(("davinci", "yt"));
-                bot.send_message(msg.chat.id, caption.to_string()).await?;
-                (
-                    format!("/{command} {from} {to}", command = "transform"),
-                    Some(d.document),
+    // настраиваем обработчики команд
+    let handler = Update::filter_message()
+        .branch(
+            dptree::entry()
+                .filter_command::<BotCommand>()
+                .branch(case![BotCommand::Decode(text, format)].endpoint(decode_handler))
+                .branch(case![BotCommand::Encode(text, format)].endpoint(encode_handler))
+                .branch(case![BotCommand::Help].endpoint(help_handler))
+                .branch(case![BotCommand::Jp(text)].endpoint(jp_handler))
+                .branch(case![BotCommand::Qr(text)].endpoint(qr_handler))
+                .branch(case![BotCommand::Radix(from, to, value)].endpoint(radix_handler))
+                .branch(
+                    case![BotCommand::Skb(text, layout, from_lang, to_lang)].endpoint(skb_handler),
                 )
-            }
-            MediaKind::Text(text) => (text.text, None),
-            _ => ("help".to_string(), None),
-        },
-        _ => ("help".to_string(), None),
-    };
+                .branch(case![BotCommand::Tracking(barcode)].endpoint(tracking_handler))
+                .branch(case![BotCommand::Utime(timestamp)].endpoint(unixtime_handler))
+                .branch(case![BotCommand::Winner(input)].endpoint(winner_handler)),
+        )
+        // команда отличается от остальных, обрабатывает файл csv. Можно просто кинуть файл в тг бот разберется
+        // что это transform.
+        .branch(endpoint(transform_handler))
+        .branch(endpoint(|msg: Message, bot: Bot| async move {
+            info!("Error handler");
+            bot.send_message(
+                msg.chat.id,
+                "Бот не понял команду. Проверьте команду и параметры или наберите /help",
+            )
+            .await?;
+            respond(())
+        }));
 
-    // todo на текущий момент нет обработки ошибок и отображаем команду Help. Надо бы это исправить и возвращать текст с
-    // описание ошибки
+    // объединяем все и настраиваем диспетчер
+    Dispatcher::builder(bot, handler)
+        .enable_ctrlc_handler()
+        .build()
+        .dispatch_with_listener(
+            listener,
+            LoggingErrorHandler::with_custom_text("An error from the update listener"),
+        )
+        .await;
 
-    let result = BotCommand::parse(&text, bot_name);
-
-    if let Err(e) = result {
-        bot.send_message(msg.chat.id, e.to_string()).await?;
-        return Ok(());
-    }
-
-    let cmd = result.unwrap();
-
-    match cmd {
-        BotCommand::Encode(text, format) => {
-            let result = match format {
-                B64 => general_purpose::URL_SAFE_NO_PAD.encode(text),
-                Url => byte_serialize(text.as_bytes()).collect(),
-            };
-            bot.send_message(msg.chat.id, result).await?
-        }
-
-        BotCommand::Decode(text, format) => {
-            let result = match format {
-                B64 => general_purpose::URL_SAFE_NO_PAD.decode(text),
-                Url => {
-                    let decoded: String = parse(text.as_bytes())
-                        .map(|(key, val)| [key, val].concat())
-                        .collect();
-                    Ok(Vec::from(decoded))
-                }
-            };
-
-            let text = match &result {
-                Ok(bytes) => String::from_utf8_lossy(bytes),
-                Err(err) => Cow::from(err.to_string()),
-            };
-
-            bot.send_message(msg.chat.id, text).await?
-        }
-
-        BotCommand::Tracking(barcode) => {
-            let post = PostRu::default();
-
-            let tracking_result = post.fetch_by_barcode(barcode).await;
-
-            if let Err(err) = tracking_result {
-                bot.send_message(msg.chat.id, err.to_string()).await?;
-                return Ok(());
-            }
-
-            let tracking_model = tracking_result.unwrap();
-            bot.send_message(msg.chat.id, tracking_model.as_text_report())
-                .await?
-        }
-        BotCommand::Jp(json_string) => {
-            // let example_json = r#"{"a": "b", "c" : [1,2,3,4], "d": {"d1": 123, "d2": 3}}"#;
-
-            let value: Value = match serde_json::from_str(&json_string) {
-                Ok(v) => v,
-                Err(err) => Value::String(err.to_string()),
-            };
-
-            let prettified = serde_json::to_string_pretty(&value).unwrap();
-
-            bot.send_message(msg.chat.id, prettified).await?
-        }
-        BotCommand::Help => {
-            bot.send_message(msg.chat.id, BotCommand::descriptions().to_string())
-                .await?
-        }
-
-        BotCommand::Skb(text, layout, from_lang, to_lang) => {
-            let skb = SwitchKeyboard {
-                layout,
-                from_lang,
-                to_lang,
-            };
-            let result = skb.switch_layout(text);
-            bot.send_message(msg.chat.id, result).await?
-        }
-
-        BotCommand::Utime { timestamp } => {
-            let result = match unix_timestamp_to_datetime(timestamp) {
-                Ok(v) => v,
-                Err(err) => err.to_string(),
-            };
-            bot.send_message(msg.chat.id, result).await?
-        }
-
-        BotCommand::Transform(from, to) => {
-            let mut dst: Vec<u8> = vec![];
-
-            let transformer = DavinciYoutubeTransformer;
-
-            if let Some(d) = doc {
-                if from == "davinci" && to == "yt" {
-                    let file = bot.get_file(d.file.id).await?;
-                    bot.download_file(&file.path, &mut dst).await?;
-                }
-            }
-
-            let result = transformer.transform(&dst).await;
-
-            let text = result.unwrap_or_else(|e| e.to_string());
-
-            bot.send_message(msg.chat.id, text).await?
-        }
-        BotCommand::Qr { text } => {
-            let result: Vec<u8> =
-                qrcode_generator::to_png_to_vec(text, QrCodeEcc::Low, 256).unwrap();
-
-            let inner = InputFile::memory(result);
-
-            bot.send_photo(msg.chat.id, inner).await?
-        }
-
-        BotCommand::Radix(from, to, value) => {
-            let result = radix(from, to, value.as_str());
-            bot.send_message(msg.chat.id, result).await?
-        }
-
-        BotCommand::Winner(input) => {
-            let result = winner(input);
-            bot.send_message(msg.chat.id, result).await?
-        }
-    };
-
-    Ok(())
+    info!("bezzabot started!");
 }
