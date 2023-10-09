@@ -6,7 +6,6 @@ on:
       - '.git/**'
 env:
   CROSS_CONTAINER_IN_CONTAINER: true
-  HOSTNAME: $(docker ps -ql)
 jobs:
   linux_arm6:
     name: Linux ARMv6
@@ -22,7 +21,7 @@ jobs:
         with:
           use-cross: true
           command: build
-          args: --release --target arm-unknown-linux-musleabihf && export HOSTNAME=$(docker ps -ql)
+          args: --release --target arm-unknown-linux-musleabihf
       - name: List target
         run: find ./target
       - name: Compress

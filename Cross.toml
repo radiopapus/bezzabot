@@ -1,2 +1,5 @@
+[build]
+pre-build = ["export HOSTNAME=$(docker ps -ql)"]
+
 [build.env]
 passthrough = ["HOSTNAME"]
