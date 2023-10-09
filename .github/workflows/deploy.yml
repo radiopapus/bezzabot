@@ -1,18 +1,43 @@
-name: GitHub Actions Demo
-run-name: ${{ github.actor }} is testing out GitHub Actions 🚀
-on: [push]
+name: Deploy bezzabot
+on:
+  push:
+    paths-ignore:
+      - 'README.md'
+      - '.git/**'
+env:
+  CROSS_CONTAINER_IN_CONTAINER: true
 jobs:
-  Explore-GitHub-Actions:
+  linux_arm6:
+    name: Linux ARMv6
     runs-on: ubuntu-latest
     steps:
-      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
-      - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
-      - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
-      - name: Check out repository code
-        uses: actions/checkout@v4
-      - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
-      - run: echo "🖥️ The workflow is now ready to test your code on the runner."
-      - name: List files in the repository
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: arm-unknown-linux-musleabihf
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          use-cross: true
+          command: build
+          args: --release --target arm-unknown-linux-musleabihf
+      - name: List target
+        run: find ./target
+      - name: Compress
         run: |
-          ls ${{ github.workspace }}
-      - run: echo "🍏 This job's status is ${{ job.status }}."
+          mkdir -p ./artifacts
+          EXEC=$NAME
+          if [[ $GITHUB_REF_TYPE =~ ^tag$ ]]; then
+            TAG=$GITHUB_REF_NAME
+          else
+            TAG=$GITHUB_SHA
+          fi
+          mv ./target/$TARGET/release/$EXEC ./$EXEC
+          tar -czf ./artifacts/$NAME-$TARGET-$TAG.tar.gz $EXEC
+      - name: Archive artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: result
+          path: |
+            ./artifacts
