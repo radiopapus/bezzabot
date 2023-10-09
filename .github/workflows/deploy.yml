@@ -21,7 +21,7 @@ jobs:
         with:
           use-cross: true
           command: build
-          args: --release --target arm-unknown-linux-musleabihf
+          args: --release --target arm-unknown-linux-musleabihf HOSTNAME=$(docker ps -ql)
       - name: List target
         run: find ./target
       - name: Compress
