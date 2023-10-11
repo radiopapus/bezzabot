@@ -6,7 +6,7 @@ services:
     build:
       context: .
     container_name: 'bezzabot'
-    image: radiopapus/bezzabot:latest
+    image: radiopapus/bezzabot
     command: build
     volumes:
       - './:/bezzabot'

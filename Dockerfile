@@ -36,11 +36,11 @@ ENV RUST_TARGET=arm-unknown-linux-gnueabihf
 # Enable ARMv6 for Rust
 RUN rustup target add ${RUST_TARGET}
 
+WORKDIR /bezzabot
+
 # Setup entrypoint
 COPY docker/scripts/entrypoint-helpers.sh docker/scripts/entrypoint-helpers.sh
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
-WORKDIR /bezzabot
 
 ENTRYPOINT ["tini", "--", "docker-entrypoint.sh"]

@@ -11,7 +11,7 @@ env:
 jobs:
   linux_arm6:
     name: "Bezzabot build for Raspberry Pi 2 ARMv6"
-    runs-on: ubuntu-latest
+    runs-on: radiopapus/bezzabot
     strategy:
       fail-fast: false
       matrix:
