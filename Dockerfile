@@ -9,7 +9,7 @@ ENV AR=${TARGET}-ar CC=${TARGET}-gcc
 
 # Install deps and remove libssl-dev
 RUN apt update &&  \
-    apt install -y tini gcc-${TARGET} ca-certificates curl gnupg make &&  \
+    apt install -y tini gcc-${TARGET} ca-certificates curl gnupg make perl && \
     apt remove -y libssl-dev && \
     apt update && \
     mkdir -p /etc/apt/keyrings && \
