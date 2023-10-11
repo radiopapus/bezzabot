@@ -1,5 +1,7 @@
 FROM rust:slim-buster as base
 
+LABEL org.opencontainers.image.source=https://github.com/radiopapus/bezzabot
+
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TARGET=arm-linux-gnueabihf
 ENV PKG_CONFIG_PATH=/usr/lib/$TARGET/pkgconfig

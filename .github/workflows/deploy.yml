@@ -11,7 +11,14 @@ env:
 jobs:
   linux_arm6:
     name: "Bezzabot build for Raspberry Pi 2 ARMv6"
-    runs-on: radiopapus/bezzabot
+    runs-on: ubutnu-latest
+    container:
+      image: ghcr.io/radiopapus/bezzabot
+      volumes:
+        - .:/bezzabot
+      credentials:
+        username: ${{ github.actor }}
+        password: $GITHUB_TOKEN
     strategy:
       fail-fast: false
       matrix:
