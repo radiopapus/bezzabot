@@ -4,40 +4,45 @@ on:
     paths-ignore:
       - 'README.md'
       - '.git/**'
+
 env:
-  CROSS_CONTAINER_IN_CONTAINER: true
+  CARGO_TERM_COLOR: always
+
 jobs:
   linux_arm6:
-    name: Linux ARMv6
+    name: "Bezzabot build for Raspberry Pi 2 ARMv6"
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - arm-unknown-linux-gnueabihf
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v4
+      - name: Build project
+        run: cargo build --release --target=${{matrix.target}}
+      - uses: actions/cache@v3
+        continue-on-error: false
         with:
-          toolchain: stable
-          target: arm-unknown-linux-musleabihf
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          use-cross: true
-          command: build
-          args: --release --target arm-unknown-linux-musleabihf
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+          path: |
+              ~/.cargo/bin/
+              ~/.cargo/registry/index/
+              ~/.cargo/registry/cache/
+              ~/.cargo/git/db/
+              target/
       - name: List target
         run: find ./target
       - name: Compress
         run: |
           mkdir -p ./artifacts
-          EXEC=$NAME
-          if [[ $GITHUB_REF_TYPE =~ ^tag$ ]]; then
-            TAG=$GITHUB_REF_NAME
-          else
-            TAG=$GITHUB_SHA
-          fi
-          mv ./target/$TARGET/release/$EXEC ./$EXEC
-          tar -czf ./artifacts/$NAME-$TARGET-$TAG.tar.gz $EXEC
+          NAME="bezzabot"
+          mv ./target/$RUST_TARGET/release/$NAME ./$NAME
+          tar -czf ./artifacts/$NAME-$RUST_TARGET.tar.gz $NAME
       - name: Archive artifact
         uses: actions/upload-artifact@v3
         with:
-          name: result
+          name: archive
           path: |
             ./artifacts

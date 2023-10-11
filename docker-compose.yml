@@ -1,0 +1,15 @@
+version: '3'
+volumes:
+  data:
+services:
+  bezzabot:
+    build:
+      context: .
+    container_name: 'bezzabot'
+    image: radiopapus/bezzabot:latest
+    command: build
+    volumes:
+      - './:/bezzabot'
+    env_file: .env
+    ports:
+      - "8000:8080"
