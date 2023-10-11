@@ -1,4 +1,4 @@
-FROM rust as base
+FROM rust:slim-buster as base
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TARGET=arm-linux-gnueabihf
@@ -7,7 +7,7 @@ ENV AR=${TARGET}-ar CC=${TARGET}-gcc
 
 # Install deps and remove libssl-dev
 RUN apt update &&  \
-    apt install -y tini gcc-${TARGET} ca-certificates curl gnupg &&  \
+    apt install -y tini gcc-${TARGET} ca-certificates curl gnupg make &&  \
     apt remove -y libssl-dev && \
     apt update && \
     mkdir -p /etc/apt/keyrings && \
