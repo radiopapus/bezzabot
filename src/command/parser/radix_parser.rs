@@ -31,7 +31,7 @@ const INCORRECT_FORMAT_MESSAGE: &str = r#"Неверный формат. Под�
 Пример /radix 2 16 1111 - где 2 и 16 - это основания, а 1111 это число в двочиной системе отсчета, 
 которое будет преобразовано bin в hex"#;
 
-pub fn radix_parser<'a>(input: String) -> Result<(FromRadix, ToRadix, String), ParseError> {
+pub fn radix_parser(input: String) -> Result<(FromRadix, ToRadix, String), ParseError> {
     let args: Vec<&str> = input.split_whitespace().collect();
 
     if args.len() != 3 {

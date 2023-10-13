@@ -23,7 +23,7 @@
 
 use crate::command::BotCommand;
 use crate::error::BezzabotError;
-use chrono::{DateTime, NaiveDateTime, Utc};
+use chrono::{NaiveDateTime, TimeZone, Utc};
 use teloxide::prelude::{Message, Requester, ResponseResult};
 use teloxide::{respond, Bot};
 
@@ -42,7 +42,7 @@ pub async fn unixtime_handler(bot: Bot, msg: Message, cmd: BotCommand) -> Respon
     let result = unix_timestamp_to_datetime(&timestamp)
         .ok_or(err)
         .map(|time| {
-            DateTime::<Utc>::from_utc(time, Utc)
+            Utc::from_utc_datetime(&Utc, &time)
                 .format("%Y-%m-%d %H:%M:%S")
                 .to_string()
         })

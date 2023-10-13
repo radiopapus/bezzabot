@@ -60,11 +60,7 @@ impl SwitchKeyboard {
     }
 }
 
-pub async fn skb_handler(
-    bot: Bot,
-    msg: Message,
-    cmd: BotCommand,
-) -> ResponseResult<()> {
+pub async fn skb_handler(bot: Bot, msg: Message, cmd: BotCommand) -> ResponseResult<()> {
     let BotCommand::Skb(text, layout, from_lang, to_lang) = cmd else {
         return respond(());
     };

@@ -64,3 +64,8 @@ curl -X POST https://api.telegram.org/bot{TOKEN_FROM_TELEGRAM}/setWebhook?url={N
 Задать webhook в tg
 
 https://api.telegram.org/bot{my_bot_token}/setWebhook?url={url_to_send_updates_to}
+
+## Decisions
+
+Пробовал собрать с помощью cross - не вышло.
+Пробовал собирать с помощью buildx для armv6 - некоторых пакетов нет под armv6

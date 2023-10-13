@@ -26,19 +26,18 @@ jobs:
           - arm-unknown-linux-gnueabihf
     steps:
       - uses: actions/checkout@v4
-      - name: Build project
-        run: cargo build --release --target=${{matrix.target}}
       - uses: actions/cache@v3
         continue-on-error: false
         with:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-cargo-
           path: |
-              ~/.cargo/bin/
-              ~/.cargo/registry/index/
-              ~/.cargo/registry/cache/
-              ~/.cargo/git/db/
-              target/
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+      - name: Build project
+        run: cargo build --release --target=${{matrix.target}}
       - name: Compress
         run: |
           mkdir -p ./artifacts

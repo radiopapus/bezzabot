@@ -28,6 +28,7 @@ use serde::Deserialize;
 use serde_json::Value;
 use std::collections::HashMap;
 
+#[allow(dead_code)]
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct TrackingHistoryItem {
@@ -41,6 +42,7 @@ pub struct TrackingHistoryItem {
     extra: HashMap<String, Value>,
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct TrackingItem {
@@ -53,6 +55,7 @@ pub struct TrackingItem {
     extra: HashMap<String, Value>,
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct DetailedTracking {
@@ -61,6 +64,7 @@ pub struct DetailedTracking {
     extra: HashMap<String, Value>,
 }
 
+#[allow(dead_code)]
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct TrackingModel {

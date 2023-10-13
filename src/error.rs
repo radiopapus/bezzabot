@@ -59,7 +59,7 @@ pub enum BezzabotError {
 
     #[error("parse data error `{0}`")]
     ParseError(String),
-    
+
     #[error("unknown error")]
     Unknown,
 }

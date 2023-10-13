@@ -25,6 +25,7 @@ use serde::Deserialize;
 use serde_json::Value;
 use std::collections::HashMap;
 
+#[allow(dead_code)]
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "PascalCase")]
 pub struct DavinciMarker {

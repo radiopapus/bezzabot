@@ -11,7 +11,6 @@ ENV AR=${TARGET}-ar CC=${TARGET}-gcc
 RUN apt update &&  \
     apt install -y tini gcc-${TARGET} ca-certificates curl gnupg make perl && \
     apt remove -y libssl-dev && \
-    apt update && \
     mkdir -p /etc/apt/keyrings && \
     curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
     apt update && apt install -y nodejs  && apt autoremove -y && apt clean -y
@@ -39,10 +38,3 @@ ENV RUST_TARGET=arm-unknown-linux-gnueabihf
 RUN rustup target add ${RUST_TARGET}
 
 WORKDIR /bezzabot
-
-# Setup entrypoint
-COPY docker/scripts/entrypoint-helpers.sh docker/scripts/entrypoint-helpers.sh
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
-ENTRYPOINT ["tini", "--", "docker-entrypoint.sh"]
