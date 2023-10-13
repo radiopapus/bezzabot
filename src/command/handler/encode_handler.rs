@@ -30,7 +30,7 @@ use teloxide::{respond, Bot};
 use url::form_urlencoded::byte_serialize;
 
 pub async fn encode_handler(bot: Bot, msg: Message, cmd: BotCommand) -> ResponseResult<()> {
-    let BotCommand::Encode(text, format) = cmd else {
+    let BotCommand::Enc(text, format) = cmd else {
         return respond(());
     };
 

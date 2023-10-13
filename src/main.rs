@@ -47,7 +47,7 @@ use teloxide::{dptree, respond, Bot};
 #[tokio::main]
 async fn main() {
     dotenv::dotenv().ok();
-
+    pretty_env_logger::init();
     info!("Starting bezzabot...");
 
     let bot = Bot::from_env();
@@ -60,8 +60,8 @@ async fn main() {
         .branch(
             dptree::entry()
                 .filter_command::<BotCommand>()
-                .branch(case![BotCommand::Decode(text, format)].endpoint(decode_handler))
-                .branch(case![BotCommand::Encode(text, format)].endpoint(encode_handler))
+                .branch(case![BotCommand::Dec(text, format)].endpoint(decode_handler))
+                .branch(case![BotCommand::Enc(text, format)].endpoint(encode_handler))
                 .branch(case![BotCommand::Help].endpoint(help_handler))
                 .branch(case![BotCommand::Jp(text)].endpoint(jp_handler))
                 .branch(case![BotCommand::Qr(text)].endpoint(qr_handler))

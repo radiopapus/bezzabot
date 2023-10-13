@@ -33,8 +33,8 @@
 
 abort()
 {
-    echo $1 >&2
-    exit $2
+    echo "$1" >&2
+    exit "$2"
 }
 
 function Echo_Message()

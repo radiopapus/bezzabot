@@ -59,3 +59,8 @@ curl -X POST https://api.telegram.org/bot{TOKEN_FROM_TELEGRAM}/setWebhook?url={N
 Работает на [raspberry pi 2 model b](https://amperka.ru/product/raspberry-pi-2-model-b).
 Вкратце тут : [Telegram бот на Rust, Два, Три и Raspberry Pi 2](https://habr.com/ru/articles/720410/), чуть подробнее 
 на [видео](https://www.youtube.com/watch?v=ubCFcG0HtOo)
+
+## Полезное
+Задать webhook в tg
+
+https://api.telegram.org/bot{my_bot_token}/setWebhook?url={url_to_send_updates_to}

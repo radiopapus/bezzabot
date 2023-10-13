@@ -31,7 +31,7 @@ use teloxide::{respond, Bot};
 use url::form_urlencoded::parse;
 
 pub async fn decode_handler(bot: Bot, msg: Message, cmd: BotCommand) -> ResponseResult<()> {
-    let BotCommand::Decode(text, format) = cmd else {
+    let BotCommand::Dec(text, format) = cmd else {
         return respond(());
     };
 

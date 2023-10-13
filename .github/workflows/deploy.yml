@@ -39,8 +39,6 @@ jobs:
               ~/.cargo/registry/cache/
               ~/.cargo/git/db/
               target/
-      - name: List target
-        run: find ./target
       - name: Compress
         run: |
           mkdir -p ./artifacts
@@ -51,5 +49,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: archive
-          path: |
-            ./artifacts
+          path: ./artifacts

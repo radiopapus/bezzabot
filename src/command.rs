@@ -39,16 +39,16 @@ use parser::winner_parser::winner_parser;
 #[command(rename_rule = "lowercase", description = "Доступные команды:")]
 pub enum BotCommand {
     #[command(
-    parse_with = encdec_parser,
-    description = r#"Декодирует текст по заданному формату . /dec -f b64 text. Доступные форматы b64, url."#
+        parse_with = encdec_parser,
+        description = r#"Декодирует текст по заданному формату . /dec -f b64 text. Доступные форматы b64, url."#
     )]
-    Decode(String, EncDecFormat),
+    Dec(String, EncDecFormat),
 
     #[command(
-    parse_with = encdec_parser,
-    description = r#"Кодирует текст по заданному формату . /enc -f b64 text. Доступные форматы b64, url."#
+        parse_with = encdec_parser,
+        description = r#"Кодирует текст по заданному формату . /enc -f b64 text. Доступные форматы b64, url."#
     )]
-    Encode(String, EncDecFormat),
+    Enc(String, EncDecFormat),
 
     #[command(description = "Отображает этот текст.")]
     Help,
@@ -60,20 +60,20 @@ pub enum BotCommand {
     Qr(String),
 
     #[command(
-    parse_with = radix_parser,
-    description = "Radix converter. /radix 2 16 1111"
+        parse_with = radix_parser,
+        description = "Radix converter. /radix 2 16 1111"
     )]
     Radix(FromRadix, ToRadix, String),
 
     #[command(
-    parse_with = switch_keyboard_parser,
-    description = "Превращает йцукен -> qwerty. Пример: /skb <text>."
+        parse_with = switch_keyboard_parser,
+        description = "Превращает йцукен -> qwerty. Пример: /skb <text>."
     )]
     Skb(String, Layout, FromLanguage, ToLanguage),
 
     #[command(
-    parse_with = tracking_parser,
-    description = "Статус доставки через почту России. Пример: /tracking номер_заказа"
+        parse_with = tracking_parser,
+        description = "Статус доставки через почту России. Пример: /tracking номер_заказа"
     )]
     Tracking(String),
 
