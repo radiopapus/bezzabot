@@ -54,7 +54,7 @@ jobs:
         with:
           url: ${{ secrets.WEBHOOK_URL }}
           method: POST
-          payload: '{"key": "${{ secrets.DEPLOY_TOKEN  }}, "version": "12345" "}'
+          payload: '{"key": "${{ secrets.DEPLOY_TOKEN  }}", "version": "12345" }'
           # TODO Basic Auth headers: '{"Authentication": "Token ${{ env.TOKEN }}"}'
           # username: ${{ secrets.BASIC_AUTH_UN }}
           # password: ${{ secrets.BASIC_AUTH_PW }}
