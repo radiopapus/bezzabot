@@ -49,11 +49,12 @@ jobs:
         with:
           name: archive
           path: ./artifacts
-      - name: stop service
-        uses: appleboy/ssh-action@v1.0.0
+      - name: Call deploy command
+        uses: satak/webrequest-action@master
         with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT }}
-          script: whoami
+          url: ${{ secrets.WEBHOOK_URL }}
+          method: POST
+          payload: '{"key": "${{ secrets.DEPLOY_TOKEN  }}, "version": "12345" "}'
+          # TODO Basic Auth headers: '{"Authentication": "Token ${{ env.TOKEN }}"}'
+          # username: ${{ secrets.BASIC_AUTH_UN }}
+          # password: ${{ secrets.BASIC_AUTH_PW }}
