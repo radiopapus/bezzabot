@@ -41,20 +41,20 @@ jobs:
       - name: Compress
         run: |
           mkdir -p ./artifacts
-          NAME="bezzabot"
-          mv ./target/$RUST_TARGET/release/$NAME ./$NAME
-          tar -czf ./artifacts/$NAME-$RUST_TARGET.tar.gz $NAME
+          mv ./target/$RUST_TARGET/release/bezzabot ./artifacts/bezzabot
       - name: Archive artifact
+        id: upload
         uses: actions/upload-artifact@v3
         with:
-          name: archive
+          name: bezzabot
           path: ./artifacts
+      - name: 'Echo download path'
+        run: echo ${{steps.upload.outputs.id}}
       - name: Call deploy command
         uses: satak/webrequest-action@master
         with:
           url: ${{ secrets.WEBHOOK_URL }}
           method: POST
-          payload: '{"key": "${{ secrets.DEPLOY_TOKEN  }}", "version": "12345" }'
-          # TODO Basic Auth headers: '{"Authentication": "Token ${{ env.TOKEN }}"}'
-          # username: ${{ secrets.BASIC_AUTH_UN }}
-          # password: ${{ secrets.BASIC_AUTH_PW }}
+          payload: '{"key": "${{ secrets.DEPLOY_TOKEN  }}", "version": "12345", "artifactId":  }'
+          # username: ${{ secrets.BASIC_AUTH_USER }}
+          # password: ${{ secrets.BASIC_AUTH_PASSWORD }}
